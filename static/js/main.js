@@ -1,0 +1,652 @@
+/**
+ * ArogyaCare Healthcare Platform — Main JavaScript Controller
+ * Multilingual Engine (English & Telugu), Doctor Directory Search,
+ * Appointment Booking, Video Room Simulation, Tele-Chat, Document Vault,
+ * Emergency SOS Dispatch, and Profile Health Passport.
+ */
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTabNavigation();
+  initSpecializationFilters();
+  initCallTimer();
+});
+
+// Current language state ('en' | 'te')
+let currentLang = 'en';
+
+// Multilingual Dictionary (English & Telugu - ఇంగ్లీష్ & తెలుగు)
+const i18n = {
+  en: {
+    tagline: "Online Healthcare Platform",
+    nav_doctors: "Find Doctors",
+    nav_appointments: "Appointments",
+    nav_video: "Video Consult",
+    nav_chat: "Tele-Chat",
+    nav_records: "Rx & Vault",
+    nav_hospitals: "Emergency & Hospitals",
+    nav_profile: "Health ID",
+    sos_btn: "SOS 108",
+    notif_title: "Notifications",
+    hero_badge: "Verified Specialist Telemedicine Platform",
+    hero_title1: "Quality Healthcare",
+    hero_title2: "Anytime, Anywhere",
+    hero_subtitle: "Consult top doctors via video calls, book in-clinic appointments, access digital prescriptions, and trigger 24/7 emergency SOS support.",
+    search_btn: "Search Doctors",
+    sec_doctors_title: "Find Specialist Doctors",
+    sec_doctors_sub: "Book online video consultations or clinic visits with certified healthcare specialists.",
+    sec_appointments_title: "My Appointments",
+    sec_appointments_sub: "Manage upcoming video consultations, clinic visits, and past health history.",
+    sec_video_title: "Online Tele-Video Consultation Room",
+    sec_video_sub: "Secure, HD end-to-end encrypted virtual doctor consultation with live video, audio, and chat.",
+    sec_chat_title: "Patient-Doctor Tele-Chat",
+    sec_chat_sub: "Direct messaging with your consulting doctor for non-emergency advice, follow-ups, and report reviews.",
+    sec_records_title: "Digital Prescription Vault & Reports",
+    sec_records_sub: "Access digital doctor prescriptions, dosage instructions, and lab reports safely stored in your health vault.",
+    sec_sos_title: "Emergency SOS & 24/7 Hospitals Tracker",
+    sec_sos_sub: "Trigger instant emergency dispatch or connect directly with nearby 24/7 trauma hospitals and ICU units.",
+    sec_profile_title: "Patient Digital Health Passport ID",
+    sec_profile_sub: "Your universal digital medical identity card with blood group, allergy records, and emergency contact details.",
+    btn_view_profile: "View Profile",
+    btn_book_now: "Book Consultation",
+    btn_new_appointment: "Book New Appointment",
+    btn_join_video: "Join Video Room",
+    btn_chat_doc: "Message Doctor",
+    btn_upload_report: "Upload Medical Report",
+    sos_banner_btn: "TRIGGER EMERGENCY SOS (108)",
+    recent_consultants: "Recent Consultants",
+    modal_book_title: "Book Doctor Consultation"
+  },
+  te: {
+    tagline: "ఆరోగ్య సంరక్షణ వ్యవస్థ",
+    nav_doctors: "డాక్టర్లను వెతకండి",
+    nav_appointments: "అపాయింట్‌మెంట్లు",
+    nav_video: "వీడియో సంప్రదింపులు",
+    nav_chat: "డాక్టర్ చాట్",
+    nav_records: "ప్రిస్క్రిప్షన్ & రిపోర్టులు",
+    nav_hospitals: "అత్యవసర & హాస్పిటల్స్",
+    nav_profile: "హెల్త్ ఐడీ",
+    sos_btn: "SOS 108",
+    notif_title: "నోటిఫికేషన్లు",
+    hero_badge: "ధృవీకరించబడిన నిపుణుల టెలిమెడిసిన్ ప్లాట్‌ఫాం",
+    hero_title1: "మెరుగైన వైద్య సేవలు",
+    hero_title2: "ఎప్పుడైనా, ఎక్కడైనా",
+    hero_subtitle: "వీడియో కాల్స్ ద్వారా అగ్రశ్రేణి వైద్యులను సంప్రదించండి, అపాయింట్‌మెంట్‌లు బుక్ చేయండి, డిజిటల్ ప్రిస్క్రిప్షన్‌లు పొందండి మరియు 24/7 ఎమర్జెన్సీ SOS సేవలు పొందండి.",
+    search_btn: "డాక్టర్లను వెతకండి",
+    sec_doctors_title: "వైద్య నిపుణులను వెతకండి",
+    sec_doctors_sub: "ధృవీకరించబడిన వైద్య నిపుణులతో ఆన్‌లైన్ వీడియో సంప్రదింపులు లేదా క్లినిక్ సందర్శనలను బుక్ చేసుకోండి.",
+    sec_appointments_title: "నా అపాయింట్‌మెంట్‌లు",
+    sec_appointments_sub: "రాబోయే వీడియో సంప్రదింపులు, క్లినిక్ సందర్శనలు మరియు ఆరోగ్య చరిత్రను నిర్వహించండి.",
+    sec_video_title: "ఆన్‌లైన్ టెలి-వీడియో సంప్రదింపుల గది",
+    sec_video_sub: "లైవ్ వీడియో, ఆడియో మరియు చాట్‌తో సురక్షితమైన హెచ్‌డి వీడియో వైద్య సంప్రదింపులు.",
+    sec_chat_title: "పేషెంట్-డాక్టర్ టెలి-చాట్",
+    sec_chat_sub: "సలహాలు, తదుపరి పరీక్షలు మరియు నివేదికల పరిశీలన కోసం మీ వైద్యునితో ప్రత్యక్ష సందేశాలు పంపండి.",
+    sec_records_title: "డిజిటల్ ప్రిస్క్రిప్షన్ & ల్యాబ్ రిపోర్టులు",
+    sec_records_sub: "మీ డిజిటల్ వైద్యుల ప్రిస్క్రిప్షన్లు మరియు ల్యాబ్ నివేదికలను సురక్షితంగా వీక్షించండి.",
+    sec_sos_title: "అత్యవసర SOS & 24/7 ఆసుపత్రుల గుర్తింపు",
+    sec_sos_sub: "వెంటనే అత్యవసర అంబులెన్స్ సేవలను పొందండి లేదా దగ్గరలోని 24/7 ఐసీయూ ఆసుపత్రులతో కనెక్ట్ అవ్వండి.",
+    sec_profile_title: "పేషెంట్ డిజిటల్ హెల్త్ పాస్‌పోర్ట్ ఐడీ",
+    sec_profile_sub: "రక్త గ్రూపు, అలెర్జీ రికార్డులు మరియు అత్యవసర సంప్రదింపు వివరాలతో మీ విశ్వవ్యాప్త డిజిటల్ హెల్త్ కార్డ్.",
+    btn_view_profile: "ప్రొఫైల్ చూడండి",
+    btn_book_now: "బుక్ చేసుకోండి",
+    btn_new_appointment: "కొత్త అపాయింట్‌మెంట్ బుక్ చేయండి",
+    btn_join_video: "వీడియో గదిలో చేరండి",
+    btn_chat_doc: "డాక్టర్‌కి మెసేజ్ చేయండి",
+    btn_upload_report: "వైద్య నివేదికను అప్‌లోడ్ చేయండి",
+    sos_banner_btn: "అత్యవసర SOS అంబులెన్స్ (108)",
+    recent_consultants: "ఇటీవలి వైద్యులు",
+    modal_book_title: "డాక్టర్ అపాయింట్‌మెంట్ బుక్ చేసుకోండి"
+  }
+};
+
+/**
+ * Multilingual Toggle (English & Telugu)
+ */
+function toggleLanguage() {
+  currentLang = currentLang === 'en' ? 'te' : 'en';
+  document.getElementById('current-lang-label').textContent = currentLang === 'en' ? 'EN | తెలుగు' : 'తెలుగు | EN';
+
+  // Translate elements with data-i18n attribute
+  document.querySelectorAll('[data-i18n]').forEach(elem => {
+    const key = elem.getAttribute('data-i18n');
+    if (i18n[currentLang][key]) {
+      elem.textContent = i18n[currentLang][key];
+    }
+  });
+
+  // Toggle bilingual elements
+  toggleBilingualElements();
+  showToast(`Language switched to ${currentLang === 'en' ? 'English' : 'తెలుగు (Telugu)'}`);
+}
+
+function toggleBilingualElements() {
+  const showEn = currentLang === 'en';
+  document.querySelectorAll('.spec-en, .doc-name-en, .doc-spec-en, .hosp-en, .addr-en, .icu-en, .status-en, .qq-en').forEach(e => e.style.display = showEn ? 'inline' : 'none');
+  document.querySelectorAll('.spec-te, .doc-name-te, .doc-spec-te, .hosp-te, .addr-te, .icu-te, .status-te, .qq-te').forEach(e => e.style.display = showEn ? 'none' : 'inline');
+}
+
+/**
+ * Tab Navigation Controller (Desktop & Mobile)
+ */
+function initTabNavigation() {
+  const navBtns = document.querySelectorAll('.nav-btn, .mobile-nav-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.getAttribute('data-tab');
+
+      navBtns.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+
+      // Highlight active desktop & mobile buttons for this tab
+      document.querySelectorAll(`[data-tab="${targetTab}"]`).forEach(b => b.classList.add('active'));
+
+      const activeContent = document.getElementById(`tab-${targetTab}`);
+      if (activeContent) {
+        activeContent.classList.add('active');
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+}
+
+function switchTab(tabId) {
+  const btn = document.querySelector(`.nav-btn[data-tab="${tabId}"]`);
+  if (btn) btn.click();
+}
+
+/**
+ * Specialization Filters & Doctor Search
+ */
+function initSpecializationFilters() {
+  const pills = document.querySelectorAll('#specialization-pills .pill-btn');
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      pills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const specId = pill.getAttribute('data-spec');
+      filterDoctors(specId, '');
+    });
+  });
+}
+
+function handleDoctorSearch() {
+  const query = document.getElementById('doctor-search-input').value.trim();
+  const activePill = document.querySelector('#specialization-pills .pill-btn.active');
+  const specId = activePill ? activePill.getAttribute('data-spec') : 'all';
+  filterDoctors(specId, query);
+}
+
+function filterDoctors(specId, query) {
+  fetch(`/api/doctors?specialization=${specId}&search=${encodeURIComponent(query)}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success' && data.doctors) {
+        renderDoctorsGrid(data.doctors);
+        document.getElementById('doctor-count-badge').textContent = `Showing ${data.count} Doctor(s)`;
+      }
+    })
+    .catch(err => console.error('Error fetching doctors:', err));
+}
+
+function renderDoctorsGrid(doctors) {
+  const container = document.getElementById('doctors-grid-container');
+  if (!container) return;
+
+  if (doctors.length === 0) {
+    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);"><i class="fa-solid fa-user-slash" style="font-size: 2.5rem; color: var(--medical-teal); margin-bottom: 1rem;"></i><p>No specialist doctors matched your query.</p></div>';
+    return;
+  }
+
+  container.innerHTML = doctors.map(d => `
+    <div class="doctor-card" id="doc-card-${d.id}">
+      <div class="doc-card-header">
+        <img src="${d.avatar}" alt="${d.name_en}" class="doc-avatar">
+        <div class="doc-status-badge ${d.available ? 'online' : ''}">
+          <i class="fa-solid fa-circle"></i>
+          <span class="status-en">${d.availability_status_en}</span>
+          <span class="status-te" style="display:none;">${d.availability_status_te}</span>
+        </div>
+      </div>
+      <div class="doc-card-body">
+        <h3 class="doc-name">
+          <span class="doc-name-en">${d.name_en}</span>
+          <span class="doc-name-te" style="display:none;">${d.name_te}</span>
+        </h3>
+        <p class="doc-spec">
+          <span class="doc-spec-en">${d.specialization_en}</span>
+          <span class="doc-spec-te" style="display:none;">${d.specialization_te}</span>
+        </p>
+        <p class="doc-hospital"><i class="fa-solid fa-building-hospital"></i> ${d.hospital_en}</p>
+        <p class="doc-qual"><i class="fa-solid fa-graduation-cap"></i> ${d.qualification}</p>
+        <div class="doc-meta-row">
+          <span class="meta-item"><i class="fa-solid fa-briefcase"></i> ${d.experience_years} Yrs Exp</span>
+          <span class="meta-item text-yellow"><i class="fa-solid fa-star"></i> ${d.rating} (${d.reviews_count})</span>
+          <span class="meta-item text-green"><i class="fa-solid fa-indian-rupee-sign"></i> ${d.fee}</span>
+        </div>
+        <div class="doc-languages"><i class="fa-solid fa-language"></i> ${d.languages.join(', ')}</div>
+      </div>
+      <div class="doc-card-footer">
+        <button class="btn-secondary" onclick="openDoctorModal('${d.id}')"><i class="fa-solid fa-user"></i> View Profile</button>
+        <button class="btn-primary" onclick="openBookingModal('${d.id}')"><i class="fa-solid fa-calendar-plus"></i> Book Consultation</button>
+      </div>
+    </div>
+  `).join('');
+
+  toggleBilingualElements();
+}
+
+/**
+ * Appointment Booking Modal
+ */
+function openBookingModal(doctorId) {
+  fetch(`/api/doctor/${doctorId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success' && data.doctor) {
+        const doc = data.doctor;
+        document.getElementById('book-doc-id').value = doc.id;
+        document.getElementById('book-doc-name').textContent = doc.name_en;
+        document.getElementById('book-doc-spec').textContent = doc.specialization_en;
+        document.getElementById('book-doc-fee').textContent = `Consultation Fee: ₹${doc.fee}`;
+        document.getElementById('book-doc-img').src = doc.avatar;
+
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('book-date').value = today;
+
+        document.getElementById('modal-booking').classList.add('active');
+      }
+    });
+}
+
+function closeBookingModal() {
+  document.getElementById('modal-booking').classList.remove('active');
+}
+
+function submitBooking() {
+  const docId = document.getElementById('book-doc-id').value;
+  const date = document.getElementById('book-date').value;
+  const slot = document.getElementById('book-slot').value;
+  const mode = document.getElementById('book-mode').value;
+  const complaint = document.getElementById('book-complaint').value;
+
+  fetch('/api/book-appointment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      doctor_id: docId,
+      date: date,
+      time_slot: slot,
+      consultation_type: mode,
+      complaint: complaint,
+      patient_name: 'Sai Manohar'
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      closeBookingModal();
+      showToast(`Appointment successfully booked for ${data.appointment.date} at ${data.appointment.time_slot}!`);
+      prependAppointmentCard(data.appointment);
+      switchTab('appointments');
+    }
+  });
+}
+
+function prependAppointmentCard(apt) {
+  const container = document.getElementById('appointments-list-container');
+  if (!container) return;
+
+  const cardHtml = `
+    <div class="appointment-card">
+      <div class="apt-header">
+        <div class="apt-id-badge">${apt.id}</div>
+        <span class="apt-status-badge confirmed"><i class="fa-solid fa-circle-check"></i> ${apt.status}</span>
+      </div>
+      <div class="apt-body">
+        <div class="apt-doc-info">
+          <div class="doc-icon-box"><i class="fa-solid fa-user-doctor"></i></div>
+          <div>
+            <h4 class="apt-doc-name">${apt.doctor_name}</h4>
+            <p class="apt-doc-spec">${apt.specialization}</p>
+          </div>
+        </div>
+        <div class="apt-details-grid">
+          <div><i class="fa-solid fa-calendar text-teal"></i> <strong>Date:</strong> ${apt.date}</div>
+          <div><i class="fa-solid fa-clock text-teal"></i> <strong>Time Slot:</strong> ${apt.time_slot}</div>
+          <div><i class="fa-solid fa-video text-blue"></i> <strong>Mode:</strong> ${apt.type}</div>
+          <div><i class="fa-solid fa-notes-medical text-muted"></i> <strong>Reason:</strong> ${apt.complaint}</div>
+        </div>
+      </div>
+      <div class="apt-footer">
+        <button class="btn-primary" onclick="launchVideoCall('${apt.id}', '${apt.doctor_name}')"><i class="fa-solid fa-video"></i> Join Video Room</button>
+        <button class="btn-secondary" onclick="openChatWithDoctor('${apt.doctor_id}', '${apt.doctor_name}')"><i class="fa-solid fa-comments"></i> Message Doctor</button>
+      </div>
+    </div>
+  `;
+
+  container.insertAdjacentHTML('afterbegin', cardHtml);
+}
+
+/**
+ * Doctor Profile Modal
+ */
+function openDoctorModal(doctorId) {
+  fetch(`/api/doctor/${doctorId}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === 'success' && data.doctor) {
+        const doc = data.doctor;
+        const content = document.getElementById('doctor-modal-content');
+        content.innerHTML = `
+          <div style="display: flex; gap: 1.25rem; margin-bottom: 1.5rem;">
+            <img src="${doc.avatar}" style="width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 3px solid var(--medical-teal);">
+            <div>
+              <h3 style="font-size: 1.3rem;">${doc.name_en}</h3>
+              <p class="text-teal" style="font-weight: 700;">${doc.specialization_en}</p>
+              <p style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-building-hospital"></i> ${doc.hospital_en}</p>
+              <p style="font-size: 0.8rem; color: var(--text-dim);">${doc.qualification}</p>
+            </div>
+          </div>
+
+          <div style="background: rgba(0,0,0,0.25); padding: 1rem; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div><strong>Experience:</strong> ${doc.experience_years} Years</div>
+            <div><strong>Consultation Fee:</strong> ₹${doc.fee}</div>
+            <div><strong>Rating:</strong> ⭐ ${doc.rating} (${doc.reviews_count} reviews)</div>
+            <div><strong>Languages:</strong> ${doc.languages.join(', ')}</div>
+          </div>
+
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn-secondary" style="flex: 1;" onclick="closeDoctorModal()">Close Profile</button>
+            <button class="btn-primary" style="flex: 1;" onclick="closeDoctorModal(); openBookingModal('${doc.id}');"><i class="fa-solid fa-calendar-plus"></i> Book Consultation</button>
+          </div>
+        `;
+
+        document.getElementById('modal-doctor-profile').classList.add('active');
+      }
+    });
+}
+
+function closeDoctorModal() {
+  document.getElementById('modal-doctor-profile').classList.remove('active');
+}
+
+/**
+ * Virtual Tele-Video Consultation Room Controls
+ */
+let callTimerInterval = null;
+let callSeconds = 252; // 04:12
+
+function initCallTimer() {
+  const timerElem = document.getElementById('call-timer');
+  if (!timerElem) return;
+
+  clearInterval(callTimerInterval);
+  callTimerInterval = setInterval(() => {
+    callSeconds++;
+    const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+    const secs = String(callSeconds % 60).padStart(2, '0');
+    timerElem.textContent = `00:${mins}:${secs}`;
+  }, 1000);
+}
+
+function launchVideoCall(aptId, doctorName) {
+  document.getElementById('call-doctor-name').textContent = doctorName;
+  switchTab('video-consult');
+  showToast(`Connected to Virtual Video Consultation Room with ${doctorName}!`);
+}
+
+function toggleMic() {
+  const btn = document.getElementById('btn-toggle-mic');
+  btn.classList.toggle('active');
+  btn.classList.toggle('muted');
+  const isMuted = btn.classList.contains('muted');
+  btn.innerHTML = `<i class="fa-solid fa-${isMuted ? 'microphone-slash' : 'microphone'}"></i>`;
+  showToast(isMuted ? 'Microphone muted' : 'Microphone unmuted');
+}
+
+function toggleCam() {
+  const btn = document.getElementById('btn-toggle-cam');
+  btn.classList.toggle('active');
+  btn.classList.toggle('off');
+  const isOff = btn.classList.contains('off');
+  btn.innerHTML = `<i class="fa-solid fa-video${isOff ? '-slash' : ''}"></i>`;
+  showToast(isOff ? 'Camera turned off' : 'Camera turned on');
+}
+
+function toggleScreenShare() {
+  showToast('Sharing medical report document screen...');
+}
+
+function toggleInCallChat() {
+  const panel = document.getElementById('in-call-chat-panel');
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function sendInCallMessage() {
+  const input = document.getElementById('in-call-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const msgBox = document.getElementById('in-call-messages');
+  const msgDiv = document.createElement('div');
+  msgDiv.className = 'chat-msg patient-msg';
+  msgDiv.innerHTML = `<strong>You:</strong> ${text}`;
+  msgBox.appendChild(msgDiv);
+  input.value = '';
+  msgBox.scrollTop = msgBox.scrollHeight;
+}
+
+function endVideoCall() {
+  clearInterval(callTimerInterval);
+  showToast('Video Consultation Ended. Digital summary saved in Vault.');
+  switchTab('appointments');
+}
+
+/**
+ * Patient-Doctor Tele-Chat
+ */
+function openChatWithDoctor(docId, docName) {
+  document.getElementById('active-chat-doc-name').textContent = docName;
+  switchTab('chat');
+}
+
+function selectChatDoctor(docId, docName, avatarUrl) {
+  document.getElementById('active-chat-doc-name').textContent = docName;
+  document.getElementById('active-chat-avatar').src = avatarUrl;
+  document.querySelectorAll('.chat-doc-item').forEach(i => i.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+function insertQuickQuery(msgText) {
+  const input = document.getElementById('chat-message-input');
+  input.value = msgText;
+  input.focus();
+}
+
+function sendMainChatMessage() {
+  const input = document.getElementById('chat-message-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const container = document.getElementById('chat-messages-area');
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble outgoing';
+  bubble.innerHTML = `
+    <div class="bubble-sender">You</div>
+    <div class="bubble-text">${text}</div>
+    <div class="bubble-meta">${timeStr} <i class="fa-solid fa-check-double text-teal"></i></div>
+  `;
+
+  container.appendChild(bubble);
+  input.value = '';
+  container.scrollTop = container.scrollHeight;
+
+  // Auto doctor response simulation after 2 seconds
+  setTimeout(() => {
+    const docBubble = document.createElement('div');
+    docBubble.className = 'chat-bubble incoming';
+    docBubble.innerHTML = `
+      <div class="bubble-sender">Dr. K. Srinivas</div>
+      <div class="bubble-text">Thank you for sharing. Please take 1 Paracetamol 650mg after food and keep hydrated. Let me know if fever persists.</div>
+      <div class="bubble-meta">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} <i class="fa-solid fa-check-double text-teal"></i></div>
+    `;
+    container.appendChild(docBubble);
+    container.scrollTop = container.scrollHeight;
+  }, 2000);
+}
+
+/**
+ * Prescription Vault & Medical Document Upload
+ */
+function openPrescriptionView(rxId) {
+  showToast(`Opening Digital Prescription #${rxId}`);
+}
+
+function downloadPrescriptionPDF(rxId) {
+  const content = `ArogyaCare Digital Prescription #${rxId}\nDoctor: Dr. K. Srinivas\nDiagnosis: Acute Upper Respiratory Infection\nMedicines:\n1. Paracetamol 650mg - 1-0-1\n2. Azithromycin 500mg - 1-0-0\nAdvice: Drink warm water and rest.`;
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${rxId}_prescription.txt`;
+  a.click();
+  showToast(`Downloaded Prescription ${rxId}`);
+}
+
+function openUploadModal() {
+  document.getElementById('modal-upload-document').classList.add('active');
+}
+
+function closeUploadModal() {
+  document.getElementById('modal-upload-document').classList.remove('active');
+}
+
+function submitDocumentUpload() {
+  const title = document.getElementById('up-title').value;
+  const category = document.getElementById('up-category').value;
+  const fileInput = document.getElementById('up-file');
+  const fileName = fileInput.files[0] ? fileInput.files[0].name : 'lab_report.pdf';
+
+  fetch('/api/upload-document', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: title, category: category, file_name: fileName })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      closeUploadModal();
+      showToast(data.message);
+      prependVaultDocument(data.document);
+    }
+  });
+}
+
+function prependVaultDocument(doc) {
+  const container = document.getElementById('documents-vault-list');
+  if (!container) return;
+
+  const html = `
+    <div class="doc-vault-item">
+      <div class="doc-file-icon"><i class="fa-solid fa-file-pdf text-red"></i></div>
+      <div class="doc-file-info">
+        <h4 class="doc-file-title">${doc.title}</h4>
+        <span class="doc-file-meta">${doc.category} &bull; ${doc.date}</span>
+      </div>
+      <span class="doc-file-status"><i class="fa-solid fa-shield-check"></i> ${doc.status}</span>
+      <button class="btn-icon-action" onclick="viewDocument('${doc.file_name}')"><i class="fa-solid fa-arrow-down-to-line"></i></button>
+    </div>
+  `;
+  container.insertAdjacentHTML('afterbegin', html);
+}
+
+function triggerFileUpload() {
+  openUploadModal();
+}
+
+function viewDocument(filename) {
+  showToast(`Accessing verified health document: ${filename}`);
+}
+
+/**
+ * Emergency SOS Dispatch Trigger
+ */
+function triggerEmergencySOS() {
+  fetch('/api/sos-trigger', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      location: 'Hyderabad Coordinates (17.3850° N, 78.4867° E)',
+      emergency_contact: '+91 9876543210'
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      document.getElementById('sos-msg-display-en').textContent = data.message_en;
+      document.getElementById('sos-msg-display-te').textContent = data.message_te;
+      document.getElementById('modal-sos-dispatch').classList.add('active');
+    }
+  });
+}
+
+function closeSOSModal() {
+  document.getElementById('modal-sos-dispatch').classList.remove('active');
+}
+
+function openDirections(hospName) {
+  window.open(`https://www.google.com/maps/search/${encodeURIComponent(hospName)}`, '_blank');
+}
+
+/**
+ * Patient Profile & Login Modal
+ */
+function openLoginModal() {
+  document.getElementById('modal-login').classList.add('active');
+}
+
+function closeLoginModal() {
+  document.getElementById('modal-login').classList.remove('active');
+}
+
+function submitLogin() {
+  closeLoginModal();
+  showToast('Patient Account Verified & Logged In');
+}
+
+function saveProfile() {
+  const name = document.getElementById('prof-name').value;
+  document.getElementById('user-display-name').textContent = name;
+  document.getElementById('id-name').textContent = name;
+  showToast('Digital Medical Profile & Health Passport Saved');
+}
+
+function printHealthID() {
+  window.print();
+}
+
+/**
+ * Notifications Drawer & Toast Helper
+ */
+function toggleNotifications() {
+  const drawer = document.getElementById('notif-drawer');
+  drawer.classList.toggle('active');
+}
+
+function clearNotifs() {
+  document.getElementById('notif-count').style.display = 'none';
+  document.querySelector('.notif-list').innerHTML = '<div style="padding:1rem; text-align:center; color:var(--text-dim);">No new notifications</div>';
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toast-message');
+  if (!toast || !toastMsg) return;
+
+  toastMsg.textContent = message;
+  toast.classList.add('active');
+  setTimeout(() => toast.classList.remove('active'), 3200);
+}
