@@ -14,9 +14,13 @@ app = Flask(__name__)
 @app.route("/manifest.json")
 def manifest():
     return send_from_directory(".", "manifest.json")
-app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "arogyacare-production-secret-key-2026")
-CORS(app, resources={r"/api/*": {"origins": "*"}})
 
+@app.route("/service-worker.js")
+def service_worker():
+    return send_from_directory(".", "service-worker.js", mimetype="application/javascript")
+
+app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "arogyacare-production-secret-key-2026")
+CORS(app, resources={r"/api/": {"origins": ""}})
 DB_FILE = os.environ.get("DATABASE_PATH", os.path.join(os.path.dirname(__file__), "arogyacare.db"))
 
 
