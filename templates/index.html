@@ -7,7 +7,7 @@
   <title>ArogyaCare | Online Healthcare & Telemedicine Consultation Platform</title>
   <meta name="description"
     content="ArogyaCare Online Healthcare Consultation Platform - Connect with top specialist doctors, book appointments, video consultation, emergency SOS, and digital health records. Multilingual in English and Telugu.">
-
+  <link rel="manifest" href="/manifest.json">
   <!-- Google Fonts: Plus Jakarta Sans & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -703,17 +703,21 @@
           <input type="hidden" id="book-doc-id">
 
           <!-- Error Alert Container -->
-          <div id="booking-error-alert" class="alert-box error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--sos-red); color: #f87171; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 1rem;">
+          <div id="booking-error-alert" class="alert-box error"
+            style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--sos-red); color: #f87171; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 1rem;">
             <i class="fa-solid fa-circle-exclamation" style="margin-right: 0.4rem;"></i>
             <span id="booking-error-text">An error occurred while booking.</span>
           </div>
 
           <div class="doc-booking-preview">
-            <img src="" id="book-doc-img" class="avatar-md" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
+            <img src="" id="book-doc-img" class="avatar-md"
+              style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
             <div>
               <h4 id="book-doc-name">Doctor Name</h4>
               <p id="book-doc-spec" class="text-teal" style="font-weight: 600; font-size: 0.9rem;">Specialization</p>
-              <span class="fee-badge" id="book-doc-fee" style="font-size: 0.8rem; background: rgba(14,165,233,0.15); color: var(--medical-teal); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">Consultation Fee: ₹500</span>
+              <span class="fee-badge" id="book-doc-fee"
+                style="font-size: 0.8rem; background: rgba(14,165,233,0.15); color: var(--medical-teal); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">Consultation
+                Fee: ₹500</span>
             </div>
           </div>
 
@@ -753,12 +757,14 @@
           <div class="form-group">
             <label><i class="fa-solid fa-notes-medical"></i> Reason for Consultation / Symptoms</label>
             <textarea id="book-complaint" class="form-control" rows="3"
-              placeholder="Describe symptoms (e.g. chest discomfort, high blood pressure, skin rash)..." required></textarea>
+              placeholder="Describe symptoms (e.g. chest discomfort, high blood pressure, skin rash)..."
+              required></textarea>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn-secondary" onclick="closeBookingModal()">Cancel</button>
-            <button type="submit" class="btn-primary" id="btn-submit-booking"><i class="fa-solid fa-check"></i> Confirm Booking</button>
+            <button type="submit" class="btn-primary" id="btn-submit-booking"><i class="fa-solid fa-check"></i> Confirm
+              Booking</button>
           </div>
         </form>
       </div>
