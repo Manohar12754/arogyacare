@@ -3,6 +3,7 @@
     "short_name": "ArogyaCare",
     "description": "ArogyaCare Online Healthcare Consultation Platform",
     "start_url": "/",
+    "id": "/",
     "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
