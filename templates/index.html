@@ -702,22 +702,34 @@
         <form id="booking-form" onsubmit="event.preventDefault(); submitBooking();">
           <input type="hidden" id="book-doc-id">
 
+          <!-- Error Alert Container -->
+          <div id="booking-error-alert" class="alert-box error" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid var(--sos-red); color: #f87171; padding: 0.75rem 1rem; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 1rem;">
+            <i class="fa-solid fa-circle-exclamation" style="margin-right: 0.4rem;"></i>
+            <span id="booking-error-text">An error occurred while booking.</span>
+          </div>
+
           <div class="doc-booking-preview">
-            <img src="" id="book-doc-img" class="avatar-md">
+            <img src="" id="book-doc-img" class="avatar-md" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover;">
             <div>
               <h4 id="book-doc-name">Doctor Name</h4>
-              <p id="book-doc-spec" class="text-teal">Specialization</p>
-              <span class="fee-badge" id="book-doc-fee">Consultation Fee: ₹500</span>
+              <p id="book-doc-spec" class="text-teal" style="font-weight: 600; font-size: 0.9rem;">Specialization</p>
+              <span class="fee-badge" id="book-doc-fee" style="font-size: 0.8rem; background: rgba(14,165,233,0.15); color: var(--medical-teal); padding: 0.2rem 0.5rem; border-radius: var(--radius-sm);">Consultation Fee: ₹500</span>
             </div>
           </div>
 
-          <div class="form-group">
-            <label><i class="fa-solid fa-video"></i> Consultation Mode</label>
-            <select id="book-mode" class="form-control">
-              <option value="Video Consultation" selected>Online HD Video Consultation</option>
-              <option value="In-Person Clinic Visit">In-Person Clinic Visit</option>
-              <option value="Voice Audio Call">Voice Tele-Call</option>
-            </select>
+          <div class="grid-2col" style="gap: 1rem; margin-top: 1rem;">
+            <div class="form-group">
+              <label><i class="fa-solid fa-user"></i> Patient Name</label>
+              <input type="text" id="book-patient-name" class="form-control" value="Sai Manohar" required>
+            </div>
+            <div class="form-group">
+              <label><i class="fa-solid fa-video"></i> Consultation Mode</label>
+              <select id="book-mode" class="form-control">
+                <option value="Video Consultation" selected>Online HD Video Consultation</option>
+                <option value="In-Person Clinic Visit">In-Person Clinic Visit</option>
+                <option value="Voice Audio Call">Voice Tele-Call</option>
+              </select>
+            </div>
           </div>
 
           <div class="grid-2col" style="gap: 1rem;">
@@ -739,14 +751,14 @@
           </div>
 
           <div class="form-group">
-            <label>Chief Health Complaint / Symptoms</label>
+            <label><i class="fa-solid fa-notes-medical"></i> Reason for Consultation / Symptoms</label>
             <textarea id="book-complaint" class="form-control" rows="3"
-              placeholder="Describe symptoms (e.g. fever, headache for 2 days)..." required></textarea>
+              placeholder="Describe symptoms (e.g. chest discomfort, high blood pressure, skin rash)..." required></textarea>
           </div>
 
           <div class="modal-footer">
             <button type="button" class="btn-secondary" onclick="closeBookingModal()">Cancel</button>
-            <button type="submit" class="btn-primary"><i class="fa-solid fa-check"></i> Confirm & Book Slot</button>
+            <button type="submit" class="btn-primary" id="btn-submit-booking"><i class="fa-solid fa-check"></i> Confirm Booking</button>
           </div>
         </form>
       </div>
@@ -887,6 +899,8 @@
     </div>
   </footer>
 
+  <!-- Runtime API Configuration Script -->
+  <script src="{{ url_for('static', filename='js/config.js') }}"></script>
   <!-- Main JavaScript File -->
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

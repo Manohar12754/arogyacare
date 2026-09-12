@@ -11,6 +11,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initCallTimer();
 });
 
+// Helper for dynamic production API URL resolution
+function getApiUrl(endpoint) {
+  if (window.AROGYACARE_CONFIG && typeof window.AROGYACARE_CONFIG.getApiUrl === 'function') {
+    return window.AROGYACARE_CONFIG.getApiUrl(endpoint);
+  }
+  return endpoint;
+}
+
+
 // Current language state ('en' | 'te')
 let currentLang = 'en';
 
@@ -165,7 +174,8 @@ function initSpecializationFilters() {
       pills.forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       const specId = pill.getAttribute('data-spec');
-      filterDoctors(specId, '');
+      const query = document.getElementById('doctor-search-input').value.trim();
+      filterDoctors(specId, query);
     });
   });
 }
@@ -178,23 +188,43 @@ function handleDoctorSearch() {
 }
 
 function filterDoctors(specId, query) {
-  fetch(`/api/doctors?specialization=${specId}&search=${encodeURIComponent(query)}`)
-    .then(res => res.json())
+  const badge = document.getElementById('doctor-count-badge');
+  if (badge) badge.textContent = 'Searching...';
+
+  fetch(`/api/doctors?specialization=${encodeURIComponent(specId)}&search=${encodeURIComponent(query)}`)
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to fetch doctors');
+      return res.json();
+    })
     .then(data => {
       if (data.status === 'success' && data.doctors) {
         renderDoctorsGrid(data.doctors);
-        document.getElementById('doctor-count-badge').textContent = `Showing ${data.count} Doctor(s)`;
+        if (badge) badge.textContent = `Showing ${data.count} Doctor(s)`;
       }
     })
-    .catch(err => console.error('Error fetching doctors:', err));
+    .catch(err => {
+      console.error('Error fetching doctors:', err);
+      showToast('Error searching doctors. Please try again.');
+    });
 }
 
 function renderDoctorsGrid(doctors) {
   const container = document.getElementById('doctors-grid-container');
   if (!container) return;
 
-  if (doctors.length === 0) {
-    container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--text-muted);"><i class="fa-solid fa-user-slash" style="font-size: 2.5rem; color: var(--medical-teal); margin-bottom: 1rem;"></i><p>No specialist doctors matched your query.</p></div>';
+  if (!doctors || doctors.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 4rem 1.5rem; background: var(--bg-card); border-radius: var(--radius-lg); border: 1px dashed var(--border-color);">
+        <i class="fa-solid fa-user-slash" style="font-size: 3rem; color: var(--medical-teal); margin-bottom: 1rem;"></i>
+        <h3 style="margin-bottom: 0.5rem; color: var(--text-main);">No Doctors Found</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto 1.5rem;">
+          No specialist doctors matched your query or filter. Try searching for other specialties like <strong>Cardiologist</strong>, <strong>Dermatologist</strong>, <strong>Pediatrician</strong> or symptoms like <strong>Fever</strong>.
+        </p>
+        <button class="btn-secondary" onclick="resetDoctorFilters()">
+          <i class="fa-solid fa-rotate-left"></i> View All Doctors
+        </button>
+      </div>
+    `;
     return;
   }
 
@@ -224,11 +254,15 @@ function renderDoctorsGrid(doctors) {
           <span class="meta-item text-yellow"><i class="fa-solid fa-star"></i> ${d.rating} (${d.reviews_count})</span>
           <span class="meta-item text-green"><i class="fa-solid fa-indian-rupee-sign"></i> ${d.fee}</span>
         </div>
-        <div class="doc-languages"><i class="fa-solid fa-language"></i> ${d.languages.join(', ')}</div>
+        <div class="doc-languages"><i class="fa-solid fa-language"></i> ${d.languages ? d.languages.join(', ') : 'English'}</div>
       </div>
       <div class="doc-card-footer">
-        <button class="btn-secondary" onclick="openDoctorModal('${d.id}')"><i class="fa-solid fa-user"></i> View Profile</button>
-        <button class="btn-primary" onclick="openBookingModal('${d.id}')"><i class="fa-solid fa-calendar-plus"></i> Book Consultation</button>
+        <button class="btn-secondary" onclick="openDoctorModal(${d.id})">
+          <i class="fa-solid fa-user"></i> <span data-i18n="btn_view_profile">View Profile</span>
+        </button>
+        <button class="btn-primary" onclick="openBookingModal(${d.id})">
+          <i class="fa-solid fa-calendar-plus"></i> <span data-i18n="btn_book_now">Book Consultation</span>
+        </button>
       </div>
     </div>
   `).join('');
@@ -236,12 +270,28 @@ function renderDoctorsGrid(doctors) {
   toggleBilingualElements();
 }
 
+function resetDoctorFilters() {
+  document.getElementById('doctor-search-input').value = '';
+  const pills = document.querySelectorAll('#specialization-pills .pill-btn');
+  pills.forEach(p => p.classList.remove('active'));
+  const allPill = document.querySelector('#specialization-pills .pill-btn[data-spec="all"]');
+  if (allPill) allPill.classList.add('active');
+  filterDoctors('all', '');
+}
+
 /**
- * Appointment Booking Modal
+ * Appointment Booking Modal Logic & Error Validation
  */
 function openBookingModal(doctorId) {
+  // Hide error container
+  const errBox = document.getElementById('booking-error-alert');
+  if (errBox) errBox.style.display = 'none';
+
   fetch(`/api/doctor/${doctorId}`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error('Doctor not found');
+      return res.json();
+    })
     .then(data => {
       if (data.status === 'success' && data.doctor) {
         const doc = data.doctor;
@@ -249,14 +299,28 @@ function openBookingModal(doctorId) {
         document.getElementById('book-doc-name').textContent = doc.name_en;
         document.getElementById('book-doc-spec').textContent = doc.specialization_en;
         document.getElementById('book-doc-fee').textContent = `Consultation Fee: ₹${doc.fee}`;
-        document.getElementById('book-doc-img').src = doc.avatar;
+        if (doc.avatar) document.getElementById('book-doc-img').src = doc.avatar;
 
-        // Set default date to today
+        // Populate time slots dropdown
+        const slotSelect = document.getElementById('book-slot');
+        if (slotSelect && doc.available_slots && doc.available_slots.length > 0) {
+          slotSelect.innerHTML = doc.available_slots.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        // Set date to today min
         const today = new Date().toISOString().split('T')[0];
-        document.getElementById('book-date').value = today;
+        const dateInput = document.getElementById('book-date');
+        dateInput.min = today;
+        if (!dateInput.value || dateInput.value < today) {
+          dateInput.value = today;
+        }
 
         document.getElementById('modal-booking').classList.add('active');
       }
+    })
+    .catch(err => {
+      console.error('Error loading doctor details:', err);
+      showToast('Could not load doctor details.');
     });
 }
 
@@ -265,32 +329,74 @@ function closeBookingModal() {
 }
 
 function submitBooking() {
+  const errBox = document.getElementById('booking-error-alert');
+  const errText = document.getElementById('booking-error-text');
+  if (errBox) errBox.style.display = 'none';
+
   const docId = document.getElementById('book-doc-id').value;
-  const date = document.getElementById('book-date').value;
-  const slot = document.getElementById('book-slot').value;
+  const patientName = document.getElementById('book-patient-name').value.trim();
+  const date = document.getElementById('book-date').value.trim();
+  const slot = document.getElementById('book-slot').value.trim();
   const mode = document.getElementById('book-mode').value;
-  const complaint = document.getElementById('book-complaint').value;
+  const complaint = document.getElementById('book-complaint').value.trim();
+
+  // Validate form fields
+  if (!patientName || !date || !slot || !complaint) {
+    if (errBox && errText) {
+      errText.textContent = 'Please fill out all required fields: Patient Name, Date, Time Slot, and Reason.';
+      errBox.style.display = 'block';
+    }
+    showToast('Please fill out all required booking fields.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-booking');
+  const origBtnText = submitBtn.innerHTML;
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
   fetch('/api/book-appointment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      doctor_id: docId,
+      doctor_id: parseInt(docId),
+      patient_name: patientName,
       date: date,
       time_slot: slot,
       consultation_type: mode,
-      complaint: complaint,
-      patient_name: 'Sai Manohar'
+      complaint: complaint
     })
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.status === 'success') {
+  .then(res => res.json().then(data => ({ status: res.status, body: data })))
+  .then(({ status, body }) => {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = origBtnText;
+
+    if (status === 200 && body.status === 'success') {
       closeBookingModal();
-      showToast(`Appointment successfully booked for ${data.appointment.date} at ${data.appointment.time_slot}!`);
-      prependAppointmentCard(data.appointment);
+      showToast(`Appointment successfully booked for ${body.appointment.date} at ${body.appointment.time_slot}!`);
+      prependAppointmentCard(body.appointment);
+      // Clear complaint field
+      document.getElementById('book-complaint').value = '';
       switchTab('appointments');
+    } else {
+      const msg = body.message || 'Failed to book appointment. Please try again.';
+      if (errBox && errText) {
+        errText.textContent = msg;
+        errBox.style.display = 'block';
+      }
+      showToast(`Error: ${msg}`);
     }
+  })
+  .catch(err => {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = origBtnText;
+    console.error('Error submitting booking:', err);
+    if (errBox && errText) {
+      errText.textContent = 'Network error occurred. Please try again.';
+      errBox.style.display = 'block';
+    }
+    showToast('Network error while booking appointment.');
   });
 }
 
@@ -298,11 +404,14 @@ function prependAppointmentCard(apt) {
   const container = document.getElementById('appointments-list-container');
   if (!container) return;
 
+  const isCancelled = apt.status === 'Cancelled';
   const cardHtml = `
-    <div class="appointment-card">
+    <div class="appointment-card" id="apt-card-${apt.id}">
       <div class="apt-header">
         <div class="apt-id-badge">${apt.id}</div>
-        <span class="apt-status-badge confirmed"><i class="fa-solid fa-circle-check"></i> ${apt.status}</span>
+        <span class="apt-status-badge ${isCancelled ? 'cancelled' : 'confirmed'}" id="apt-status-${apt.id}" style="${isCancelled ? 'background: rgba(239,68,68,0.15); color: var(--sos-red);' : ''}">
+          <i class="fa-solid fa-${isCancelled ? 'circle-xmark' : 'circle-check'}"></i> ${apt.status}
+        </span>
       </div>
       <div class="apt-body">
         <div class="apt-doc-info">
@@ -320,8 +429,19 @@ function prependAppointmentCard(apt) {
         </div>
       </div>
       <div class="apt-footer">
-        <button class="btn-primary" onclick="launchVideoCall('${apt.id}', '${apt.doctor_name}')"><i class="fa-solid fa-video"></i> Join Video Room</button>
-        <button class="btn-secondary" onclick="openChatWithDoctor('${apt.doctor_id}', '${apt.doctor_name}')"><i class="fa-solid fa-comments"></i> Message Doctor</button>
+        ${!isCancelled ? `
+          <button class="btn-primary" onclick="launchVideoCall('${apt.id}', '${apt.doctor_name}')">
+            <i class="fa-solid fa-video"></i> Join Video Room
+          </button>
+          <button class="btn-secondary" onclick="openChatWithDoctor('${apt.doctor_id}', '${apt.doctor_name}')">
+            <i class="fa-solid fa-comments"></i> Message Doctor
+          </button>
+          <button class="btn-secondary" style="border-color: var(--sos-red); color: var(--sos-red);" onclick="cancelAppointment('${apt.id}')">
+            <i class="fa-solid fa-xmark"></i> Cancel
+          </button>
+        ` : `
+          <span style="color: var(--text-dim); font-size: 0.85rem;"><i class="fa-solid fa-ban"></i> Appointment Cancelled</span>
+        `}
       </div>
     </div>
   `;
@@ -329,48 +449,106 @@ function prependAppointmentCard(apt) {
   container.insertAdjacentHTML('afterbegin', cardHtml);
 }
 
+function cancelAppointment(aptId) {
+  if (!confirm(`Are you sure you want to cancel appointment ${aptId}?`)) return;
+
+  fetch('/api/cancel-appointment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appointment_id: aptId })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === 'success') {
+      showToast(data.message);
+      const statusBadge = document.getElementById(`apt-status-${aptId}`);
+      if (statusBadge) {
+        statusBadge.className = 'apt-status-badge cancelled';
+        statusBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        statusBadge.style.color = 'var(--sos-red)';
+        statusBadge.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Cancelled';
+      }
+    } else {
+      showToast(`Error: ${data.message}`);
+    }
+  })
+  .catch(err => {
+    console.error('Error cancelling appointment:', err);
+    showToast('Failed to cancel appointment.');
+  });
+}
+
 /**
- * Doctor Profile Modal
+ * Doctor Profile Detail Modal
  */
 function openDoctorModal(doctorId) {
+  const content = document.getElementById('doctor-modal-content');
+  if (content) {
+    content.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem; color: var(--medical-teal);"></i><p style="margin-top: 0.5rem;">Loading doctor profile...</p></div>';
+  }
+  document.getElementById('modal-doctor-profile').classList.add('active');
+
   fetch(`/api/doctor/${doctorId}`)
-    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) throw new Error('Doctor profile not found');
+      return res.json();
+    })
     .then(data => {
       if (data.status === 'success' && data.doctor) {
         const doc = data.doctor;
-        const content = document.getElementById('doctor-modal-content');
         content.innerHTML = `
-          <div style="display: flex; gap: 1.25rem; margin-bottom: 1.5rem;">
-            <img src="${doc.avatar}" style="width: 84px; height: 84px; border-radius: 50%; object-fit: cover; border: 3px solid var(--medical-teal);">
+          <div style="display: flex; gap: 1.5rem; margin-bottom: 1.5rem; align-items: center; background: rgba(0,0,0,0.2); padding: 1.25rem; border-radius: var(--radius-md);">
+            <img src="${doc.avatar}" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 3px solid var(--medical-teal); box-shadow: var(--shadow-glow);">
             <div>
-              <h3 style="font-size: 1.3rem;">${doc.name_en}</h3>
-              <p class="text-teal" style="font-weight: 700;">${doc.specialization_en}</p>
-              <p style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-building-hospital"></i> ${doc.hospital_en}</p>
-              <p style="font-size: 0.8rem; color: var(--text-dim);">${doc.qualification}</p>
+              <h3 style="font-size: 1.4rem; color: var(--text-main); margin-bottom: 0.25rem;">${doc.name_en}</h3>
+              <p style="color: var(--medical-teal); font-weight: 700; font-size: 1rem; margin-bottom: 0.35rem;">${doc.specialization_en}</p>
+              <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 0.25rem;"><i class="fa-solid fa-building-hospital" style="color: var(--medical-teal);"></i> ${doc.hospital_en}</p>
+              <p style="font-size: 0.82rem; color: var(--text-dim);"><i class="fa-solid fa-graduation-cap"></i> ${doc.qualification}</p>
             </div>
           </div>
 
-          <div style="background: rgba(0,0,0,0.25); padding: 1rem; border-radius: var(--radius-md); font-size: 0.88rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-            <div><strong>Experience:</strong> ${doc.experience_years} Years</div>
-            <div><strong>Consultation Fee:</strong> ₹${doc.fee}</div>
-            <div><strong>Rating:</strong> ⭐ ${doc.rating} (${doc.reviews_count} reviews)</div>
-            <div><strong>Languages:</strong> ${doc.languages.join(', ')}</div>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; background: var(--bg-card); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.88rem; margin-bottom: 1.25rem;">
+            <div><i class="fa-solid fa-briefcase text-teal"></i> <strong>Experience:</strong> ${doc.experience_years} Years</div>
+            <div><i class="fa-solid fa-indian-rupee-sign text-green"></i> <strong>Consult Fee:</strong> ₹${doc.fee}</div>
+            <div><i class="fa-solid fa-star text-yellow"></i> <strong>Rating:</strong> ${doc.rating} (${doc.reviews_count} reviews)</div>
+            <div><i class="fa-solid fa-language text-blue"></i> <strong>Languages:</strong> ${doc.languages ? doc.languages.join(', ') : 'English'}</div>
+            <div><i class="fa-solid fa-calendar-days text-teal"></i> <strong>Available:</strong> ${doc.available_days || 'Mon - Sat'}</div>
+            <div><i class="fa-solid fa-video text-teal"></i> <strong>Tele-Consult:</strong> HD Video & Clinic</div>
           </div>
 
-          <div style="display: flex; gap: 0.75rem;">
+          <div style="margin-bottom: 1.25rem;">
+            <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.4rem;"><i class="fa-solid fa-user-doctor"></i> About Doctor</h4>
+            <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">${doc.about_en || 'Senior medical specialist.'}</p>
+          </div>
+
+          ${doc.conditions_treated ? `
+            <div style="margin-bottom: 1.5rem;">
+              <h4 style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 0.5rem;"><i class="fa-solid fa-stethoscope"></i> Specializations & Conditions Treated</h4>
+              <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                ${doc.conditions_treated.map(c => `<span style="background: rgba(14, 165, 233, 0.12); color: var(--medical-teal); font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: var(--radius-full); border: 1px solid rgba(14, 165, 233, 0.25);">${c}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          <div style="display: flex; gap: 0.85rem; margin-top: 1.5rem;">
             <button class="btn-secondary" style="flex: 1;" onclick="closeDoctorModal()">Close Profile</button>
-            <button class="btn-primary" style="flex: 1;" onclick="closeDoctorModal(); openBookingModal('${doc.id}');"><i class="fa-solid fa-calendar-plus"></i> Book Consultation</button>
+            <button class="btn-primary" style="flex: 1.5;" onclick="closeDoctorModal(); openBookingModal(${doc.id});">
+              <i class="fa-solid fa-calendar-plus"></i> Book Consultation
+            </button>
           </div>
         `;
-
-        document.getElementById('modal-doctor-profile').classList.add('active');
       }
+    })
+    .catch(err => {
+      console.error('Error fetching doctor detail:', err);
+      content.innerHTML = '<div style="color: var(--sos-red); text-align: center; padding: 2rem;"><i class="fa-solid fa-triangle-exclamation" style="font-size: 2rem; margin-bottom: 0.5rem;"></i><p>Could not load doctor profile details.</p></div>';
     });
 }
 
 function closeDoctorModal() {
   document.getElementById('modal-doctor-profile').classList.remove('active');
 }
+
 
 /**
  * Virtual Tele-Video Consultation Room Controls
