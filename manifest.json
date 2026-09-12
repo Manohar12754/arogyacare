@@ -1,8 +1,11 @@
 {
-    "name": "Arogyacare",
-    "short_name": "Arogyacare",
+    "name": "ArogyaCare - Online Healthcare & Telemedicine",
+    "short_name": "ArogyaCare",
+    "description": "ArogyaCare Online Healthcare Consultation Platform",
     "start_url": "/",
+    "scope": "/",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#ffffff"
+    "theme_color": "#ffffff",
+    "orientation": "portrait-primary"
 }

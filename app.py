@@ -2,7 +2,7 @@ import sqlite3
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request,send_from_directory
 from flask_cors import CORS
 try:
     from dotenv import load_dotenv
@@ -11,6 +11,9 @@ except ImportError:
     pass
 
 app = Flask(__name__)
+@app.route("/manifest.json")
+def manifest():
+    return send_from_directory(".", "manifest.json")
 app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "arogyacare-production-secret-key-2026")
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
